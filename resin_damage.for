@@ -27,7 +27,6 @@
         ! input variables
         integer, intent(in) :: nblock,nstatev  ! num of integration points and num of state variables
         integer, intent(in) :: k  ! current integration point
-        integer, intent(in) :: idx  ! strarting index for state variables
         real*8, dimension(nblock,nstatev), intent(in) :: stateOld  ! old state variable array
         real*8, dimension(6,6), intent(inout) :: C_init  ! initial stiffness matrix
         real*8, dimension(6), intent(in) :: strain  ! strain array
@@ -64,7 +63,6 @@
         integer, intent(in) :: nblock,nstatev  ! num of integration points and num of state variables
         integer, intent(in) :: k  ! current integration point
         real*8, dimension(nblock,nstatev), intent(in) :: stateOld  ! old state variable array
-        real*8, dimension(6,6), intent(inout) :: C_init  ! initial stiffness matrix
         real*8, dimension(6), intent(in) :: stress  ! stress array
         real*8, intent(in) :: E_m  ! isotropic stiffness
         real*8, intent(in) :: GMPlus,GMMinus  ! fracture toughnesses

@@ -338,7 +338,7 @@
         ! input variables
         integer, intent(in) :: nblock,nstatev  ! num of integration points and num of state variables
         integer, intent(in) :: k  ! current integration point
-        integer, intent(in) :: idx  ! strarting index for state variables
+        integer, intent(in) :: idx  ! starting index for state variables
         real*8, dimension(nblock,nstatev), intent(in) :: stateOld  ! old state variable array
         real*8, dimension(6,6), intent(inout) :: C_tow  ! stiffness matrix tow regions
         real*8, dimension(6), intent(in) :: strain  ! total strain
@@ -463,7 +463,7 @@
         ! input variables
         integer, intent(in) :: nblock,nstatev  ! num of integration points and num of state variables
         integer, intent(in) :: k  ! current integration point
-        integer, intent(in) :: idx  ! strarting index for state variables
+        integer, intent(in) :: idx  ! starting index for state variables
         real*8, dimension(nblock,nstatev), intent(in) :: stateOld  ! old state variable array
         real*8, dimension(6), intent(in) :: stress, strain  ! input stress and strain
         real*8, intent(in) :: XT,XC  ! longitudinal strengths
@@ -561,7 +561,7 @@
         ! input variables
         integer, intent(in) :: nblock,nstatev  ! num of integration points and num of state variables
         integer, intent(in) :: k  ! current integration point
-        integer, intent(in) :: idx  ! strarting index for state variables
+        integer, intent(in) :: idx  ! starting index for state variables
         real*8, dimension(nblock,nstatev), intent(in) :: stateOld  ! old state variable array
         real*8, dimension(6), intent(in) :: stress, strain  ! input stress and strain
         real*8, intent(in) :: YT,YC,ZT,ZC,SL,SR,ST  ! strengths
@@ -659,7 +659,7 @@
         ! input variables
         integer, intent(in) :: nblock,nstatev  ! num of integration points and num of state variables
         integer, intent(in) :: k  ! current integration point
-        integer, intent(in) :: idx  ! strarting index for state variables
+        integer, intent(in) :: stateID  ! starting index state variable array
         real*8, dimension(nblock,nstatev), intent(in) :: stateOld  ! old state variable array
         real*8, intent(in) :: delta  ! strain (scalar)
         real*8, intent(in) :: s  ! stress (scalar)
@@ -679,7 +679,9 @@
           sigma_0 = s  ! set stress at damage onset
           delta_f = (2.0d0 * G) / (sigma_0 * lch)  ! calculate final failure strain
           if (delta_f <= delta_0) then  ! check final failure strain > strain at damage onset
-            delta_f = 1.1d0 * delta_0
+            print *, 'Error: delta_f > delta_0. Consider reducing the element size.'
+            call xplb_exit
+            ! delta_f = 1.1d0 * delta_0
           end if
           ! assign variables to state array
           stateNew(k, stateID) = lch
