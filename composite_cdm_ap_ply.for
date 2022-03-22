@@ -62,7 +62,7 @@
         real*8 :: alpha_mean  ! mean out-of-plane angle
         real*8 :: lch,lch_1,lch_2  ! characteristic lengths of element and consituents
         real*8 :: vfrac_1,vfrac_2  ! volume fractions of constituents
-        real*8 :: psi  ! stiffness matrix calculation term
+        real*8 :: psi,psi_resin  ! stiffness matrix calculation terms
         real*8 :: und_flag,und_angle_1,und_angle_2  ! undulation flag and in-plane angles of constituents
         real*8 :: cpt  ! cured ply thickness
         real*8 :: u_length  ! undulation length
@@ -108,7 +108,7 @@
         und_flag = props(23)  ! 1 if undulation, 0 if straight tow
         und_angle_1 = props(24)  ! in-plane angle constituent 1
         und_angle_2 = props(25)  ! in-plane angle constituent 2
-        ! handle negative consituent angles
+        ! handle negative constituent angles
         if (und_angle_1 < 0.0d0) then
             und_angle_1 = 180.0d0 + und_angle_1
         end if
@@ -259,20 +259,20 @@
                 call cdm(k,nblock,nstatev,strain,stateOld,
      1                   C_tow,e11,e22,e33,nu12,nu13,nu23,g12,g13,g23,
      2                   XT,XC,YT,YC,ZT,ZC,SL,SR,ST,int_angle,
-     3                   alpha_mean,25,G1Plus,G1Minus,G2Plus,G2Minus,G6,
+     3                   alpha_mean,25,G1Plus,G1Minus,G2Plus,G2Minus,
      4                   lch_1,stress_1,stateNew)
               else
                 ! calculate stresses in tow 1 (if tow 1 \= pure resin)
                 call cdm(k,nblock,nstatev,strain,stateOld,
      1                   C_tow,e11,e22,e33,nu12,nu13,nu23,g12,g13,g23,
      2                   XT,XC,YT,YC,ZT,ZC,SL,SR,ST,int_angle,
-     3                   0.0d0,6,G1Plus,G1Minus,G2Plus,G2Minus,G6,
+     3                   0.0d0,6,G1Plus,G1Minus,G2Plus,G2Minus,
      4                   lch_1,stress_1,stateNew)
                 ! claculate stresses in tow 2
                 call cdm(k,nblock,nstatev,strain,stateOld,
      1                   C_tow,e11,e22,e33,nu12,nu13,nu23,g12,g13,g23,
      2                   XT,XC,YT,YC,ZT,ZC,SL,SR,ST,0.0d0,
-     3                   alpha_mean,25,G1Plus,G1Minus,G2Plus,G2Minus,G6,
+     3                   alpha_mean,25,G1Plus,G1Minus,G2Plus,G2Minus,
      4                   lch_2,stress_2,stateNew)
               end if
               ! calculate homogenized stresses by volume-averaging
@@ -286,7 +286,7 @@
               call cdm(k,nblock,nstatev,strain,stateOld,
      1                 C_tow,e11,e22,e33,nu12,nu13,nu23,g12,g13,g23,
      2                 XT,XC,YT,YC,ZT,ZC,SL,SR,ST,int_angle,
-     3                 0.0d0,25,G1Plus,G1Minus,G2Plus,G2Minus,G6,
+     3                 0.0d0,25,G1Plus,G1Minus,G2Plus,G2Minus,
      4                 lch_1,stress_1,stateNew)
               ! calculate homogenized stresses by volume averaging
               stress_total = stress_1 * vfrac_1 + stress_2 * vfrac_2
@@ -296,7 +296,7 @@
               call cdm(k,nblock,nstatev,strain,stateOld,
      1                 C_tow,e11,e22,e33,nu12,nu13,nu23,g12,g13,g23,
      2                 XT,XC,YT,YC,ZT,ZC,SL,SR,ST,0.0d0,0.0d0,6,
-     3                 G1Plus,G1Minus,G2Plus,G2Minus,G6,lch,
+     3                 G1Plus,G1Minus,G2Plus,G2Minus,lch,
      4                 stress_total,stateNew)
             end if
 
@@ -332,7 +332,7 @@
       subroutine cdm(k,nblock,nstatev,strain,stateOld,C_tow,
      1               e11,e22,e33,nu12,nu13,nu23,g12,g13,g23,
      2               XT,XC,YT,YC,ZT,ZC,SL,SR,ST,ip_angle,oop_angle,idx,
-     3               G1Plus,G1Minus,G2Plus,G2Minus,G6,lch,
+     3               G1Plus,G1Minus,G2Plus,G2Minus,lch,
      4               stress_global,stateNew)
         implicit none
         ! input variables
@@ -344,7 +344,7 @@
         real*8, dimension(6), intent(in) :: strain  ! total strain
         real*8, intent(in) :: e11,e22,e33,nu12,nu13,nu23,g12,g13,g23  ! elastic constants
         real*8, intent(in) :: XT,XC,YT,YC,ZT,ZC,SL,SR,ST  ! strengths
-        real*8, intent(in) :: G1Plus,G1Minus,G2Plus,G2Minus,G6  ! fracture toughnesses
+        real*8, intent(in) :: G1Plus,G1Minus,G2Plus,G2Minus  ! fracture toughnesses
         real*8, intent(in) :: lch  ! characteristic length
         real*8, intent(in) :: ip_angle,oop_angle  ! in-plane and out-of-plane angles
         ! local variables
@@ -352,11 +352,10 @@
         real*8, dimension(6,6) :: T_gm,T_mg  ! transformation matrices (global to material and vice versa)
         real*8, dimension(6) :: stress_mat,strain_mat  ! stress/strain in material CSYS
         real*8 :: nu21,nu31,nu32  ! secondary Poisson's ratios
-        real*8 :: d1,d2,d3,dS,d_m  ! scalar damage variables
+        real*8 :: d1,d2,d3  ! scalar damage variables
         real*8 :: psi,pi  ! stiffness matrix calculation parameter, and pi
         real*8 :: d1State,d1StateOld,d2State,d2StateOld  ! damage state vars.
-        real*8 :: d3State,d3StateOld,dSState,dSStateOld  ! damage state vars.
-        integer :: i  ! loop counter
+        real*8 :: d3State,d3StateOld  ! damage state vars.
         ! output variables
         real*8, dimension(6), intent(out) :: stress_global  ! total stress in global CSYS
         real*8, dimension(nblock,nstatev), intent(inout) :: stateNew  ! new state variable array
@@ -380,12 +379,12 @@
 
         ! Calculate damage in fiber direction
         call long_damage(k,nblock,nstatev,stateOld,stateNew,
-     1                   stress_mat,strain_mat,e11,XT,XC,
+     1                   stress_mat,strain_mat,e11,e22,XT,XC,
      2                   G1Plus,G1Minus,lch,idx,d1)
         ! Calculate damage in transverse and through-thickness matrix directions
         call matrix_damage(k,nblock,nstatev,stress_mat,strain_mat,
      1                     stateNew,idx,stateOld,YT,YC,ZT,ZC,SL,SR,ST,
-     2                     G2Plus,G2Minus,lch,d2,d3,dS)
+     2                     G2Plus,G2Minus,lch,d2,d3)
 
         ! Update state variables
         d1StateOld = stateOld(k,idx + 16)
@@ -456,7 +455,7 @@
       end function det_3x3
 
       subroutine long_damage(k,nblock,nstatev,stateOld,stateNew,
-     1                       stress,strain,e11,XT,XC,
+     1                       stress,strain,e11,e22,XT,XC,
      2                       G1Plus,G1Minus,lch,idx,d1)
         ! Computes scalar damage variable in fiber direction, d1
         implicit none
@@ -468,11 +467,11 @@
         real*8, dimension(6), intent(in) :: stress, strain  ! input stress and strain
         real*8, intent(in) :: XT,XC  ! longitudinal strengths
         real*8, intent(in) :: G1Plus,G1Minus,lch  ! fracture toughnesses and char. length
-        real*8, intent(in) :: e11  ! longitudinal modulus
+        real*8, intent(in) :: e11,e22  ! moduli
         ! local variables
-        real*8 :: d1Plus,d1Minus  ! sclar damage variables tensile/compressive loading
+        real*8 :: d1Plus,d1Minus,d1MinusStar  ! sclar damage variables tensile/compressive loading
         real*8 :: r1Plus,r1Minus  ! eleastic domain thresholds
-        real*8 :: A1Plus,A1Minus  ! exponentential energy dissipation parameter
+        real*8 :: A1Plus,A1Minus,A1PlusMinus  ! exponentential energy dissipation parameter
         real*8 :: F1_C,F1_T,F1_C_max,F1_T_max,F1_T_old,F1_C_old  ! failure criteria
         real*8 :: L_1  ! characteristic length at damage initiation
         ! output variables
@@ -500,6 +499,7 @@
         stateNew(k,idx + 1) = F1_T_max
         stateNew(k,idx + 2) = F1_C_max
         
+        d1Plus = 0.0d0
         if ((F1_T_max >= 1.0d0).or.(F1_C_max >= 1.0d0)) then
           ! Check if damage has already initiated
           if (stateOld(k, idx + 3) == 0.0d0) then
@@ -531,9 +531,13 @@
             stateNew(k,idx + 3) = L_1
           end if
           r1Minus = F1_C_max
-          A1Minus = (2.0d0*L_1*XC**2.0d0)/
-     1              (2.0d0*e11*G1Minus - L_1*XC**2.0d0)
-          d1Minus = 1.0d0 - (1.0d0/r1Minus)*exp(A1Minus*(1.0d0-r1Minus))
+          A1Minus = 0.0620116303502072d0 !(2.0d0*L_1*XC**2.0d0)/
+!     1              (2.0d0*e11*G1Minus - L_1*XC**2.0d0)
+          d1MinusStar = 1.0d0 - (1.0d0/r1Minus)*
+     1                  exp(A1Minus*(1.0d0-r1Minus))
+          A1PlusMinus = 0.5d0 * ((e11 - e22) / e11)
+          d1Minus = 1.0d0 - (1.0d0 - d1MinusStar) *
+     1              (1.0d0 - A1PlusMinus*d1Plus)
         else
           d1Minus = 0.0d0
         end if
@@ -541,7 +545,7 @@
         ! crack closure under load reversal
         if (stress(1) >= 0.0d0) then
             d1 = d1Plus
-          else
+        else
             d1 = d1Minus
         end if
 
@@ -612,36 +616,41 @@
           ! calculate value of d2
           if ((F2_T > 1.0d0).or.(stateOld(k,id_2T) /= 0.0d0)) then
             call calculate_d(k,nblock,nstatev,stateNew,stateOld,
-     1                     strain(2),stress(2),lch,id_2T,GTPlus,d2)
+     1                     strain(2),stress(2),lch,id_2T,GTPlus,d2Plus)
           else
             ! if failure index <1 d2 = 0
-            d2 = 0.0d0
+            d2Plus = 0.0d0
           end if
         else
           if ((F2_C > 1.0d0).or.(stateOld(k,id_2C) /= 0.0d0)) then
             call calculate_d(k,nblock,nstatev,stateNew,stateOld,
-     1                       strain(2),stress(2),lch,id_2C,GTMinus,d2)
+     1                       strain(2),stress(2),lch,id_2C,GTMinus,
+     2                       d2Minus)
           else
-            d2 = 0.0d0
+            d2Minus = 0.0d0
           end if
         end if
 
         if (stress(3) >= 0.0d0) then
           if ((F3_T > 1.0d0).or.(stateOld(k,id_3T) /= 0.0d0)) then
             call calculate_d(k,nblock,nstatev,stateNew,stateOld,
-     1                       strain(3),stress(3),lch,id_3T,GTPlus,d3)
+     1                       strain(3),stress(3),lch,id_3T,GTPlus,
+     2                       d3Plus)
           else
-            d3 = 0.0d0
+            d3Plus = 0.0d0
           end if
         else
           if ((F3_C > 1.0d0).or.(stateOld(k,id_3C) /= 0.0d0)) then
             call calculate_d(k,nblock,nstatev,stateNew,stateOld,
-     1                       strain(3),stress(3),lch,id_3C,GTMinus,d3)
+     1                       strain(3),stress(3),lch,id_3C,GTMinus,
+     2                       d3Minus)
           else
-            d3 = 0.0d0
+            d3Minus = 0.0d0
           end if
         end if
         
+        d2 = 1.0d0 - (1.0d0 - d2Minus) * (1.0d0 - d2Plus)
+        d3 = 1.0d0 - (1.0d0 - d3Minus) * (1.0d0 - d3Plus)
         ! catch NaN d2 and d3 values
         if (d2 /= d2) then
           d2 = 0.0d0
@@ -678,10 +687,9 @@
           delta_0 = delta  ! set strain at damage onset
           sigma_0 = s  ! set stress at damage onset
           delta_f = (2.0d0 * G) / (sigma_0 * lch)  ! calculate final failure strain
-          if (delta_f <= delta_0) then  ! check final failure strain > strain at damage onset
+          if (abs(delta_f) <= abs(delta_0)) then  ! check final failure strain > strain at damage onset
             print *, 'Error: delta_f > delta_0. Consider reducing the element size.'
             call xplb_exit
-            ! delta_f = 1.1d0 * delta_0
           end if
           ! assign variables to state array
           stateNew(k, stateID) = lch

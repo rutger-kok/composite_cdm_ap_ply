@@ -38,12 +38,11 @@
         real*8, dimension(6,6) :: C_deg  ! degraded stiffness matrix
         real*8, dimension(6) :: trialStress  ! trial stress array
         real*8 :: dM,dMState,dMStateOld  ! scalar damage variables
-        integer :: i  ! loop counter
         ! output variables
         real*8, dimension(6), intent(out) :: stress  ! final stress
         real*8, dimension(nblock,nstatev), intent(inout) :: stateNew  ! new state variable array
 
-        dM = 0.0d0  ! initialize matri damage variable
+        dM = 0.0d0  ! initialize matrix damage variable
         trialStress = matmul(C_init, strain)  ! calculate trial stress
         call resin_damage(k,nblock,nstatev,stateOld,stateNew,
      1                    trialStress,YC,YT,lch,e,GMPlus,GMMinus,dM)
@@ -70,7 +69,7 @@
         real*8, intent(in) :: lch  ! characteristic length
         ! local variables
         real*8 :: s_11,s_22,s_33,s_12,s_23,s_13  ! shorthand stresses
-        real*8 :: I1,J2  ! invariants of deviatoric stress tensor
+        real*8 :: I1,J2  ! invariants of (deviatoric for J2) stress tensor
         real*8 :: L_M  ! characteristic length at damage onset
         real*8 :: FM_T,FM_T_old,FM_T_max,FM_C,FM_C_old,FM_C_max  ! failure criteria
         real*8 :: rMPlus,rMMinus  ! elastic domain thresholds
@@ -147,12 +146,7 @@
           dMMinus = 0.0d0
         end if
         
-        ! define dM depending on sign of I1
-        if (I1 >= 0.0d0) then
-          dM = dMPlus
-        else
-          dM = dMMinus
-        end if
+        dM = 1.0d0 - (1.0d0 - dMPlus)*(1.0d0 - dMMinus)
 
         ! catch NaN dM values
         if (dM /= dM) then
