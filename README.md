@@ -2,7 +2,7 @@
 Explicit material subroutine (VUMAT) implementing a continuum damage mechanics (CDM) model for Adavanced Placed Ply (AP-PLY) composite materials in Abaqus (in fixed format Fortran 77).  
 
 ## Summary
-This CDM model has been developed specifically to model AP-PLY laminates containing through thickness fiber connectivity. The complete numerical methodology will be documented in an as yet to be published journal paper. The CDM model implemented in this subroutine is an amalgamation of the work of several authors. Failure criteria are adopted from the work of Tan et al. [1] and Shah et al. [2]. Damage evolution is defined according to the methodlogies proposed in the work of Maimi et al. [3][4] and Shah et al. [2].  
+This CDM model has been developed specifically to model AP-PLY laminates containing through thickness fiber connectivity. The complete numerical methodology is documented in: [Tensile response of AP-PLY composites: A multiscale experimental and numerical study](https://doi.org/10.1016/j.compositesa.2022.106989). The CDM model is an amalgamation of the work of several authors. Failure criteria are adopted from the work of Tan et al. [1] and Shah et al. [2]. Damage evolution is defined according to the methodlogies proposed in the work of Maimi et al. [3][4] and Shah et al. [2].
 
 ## Usage
 To run a simulation using subroutines your Abaqus installation must be linked with a Fortran compiler and compatible Visual Studio installation.  
